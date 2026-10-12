@@ -1,0 +1,29 @@
+# Единые концы строк для Windows и Linux: в репозитории и в рабочей копии — LF,
+# независимо от core.autocrlf у разработчика. Android Studio работает с LF на обеих ОС.
+* text=auto eol=lf
+
+# Скрипты Windows требуют CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell-скрипты с CRLF не запускаются в Linux ("bad interpreter")
+gradlew text eol=lf
+*.sh    text eol=lf
+
+# Бинарные файлы: без преобразований и текстовых diff
+*.jar      binary
+*.aar      binary
+*.so       binary
+*.apk      binary
+*.aab      binary
+*.png      binary
+*.webp     binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.ttf      binary
+*.otf      binary
+*.zip      binary
+*.jks      binary
+*.keystore binary

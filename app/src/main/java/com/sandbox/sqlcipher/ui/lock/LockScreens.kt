@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -71,11 +73,11 @@ fun PermissionsScreen(onDone: () -> Unit) {
 }
 
 @Composable
-fun PinSetupScreen(onPinSet: (String) -> Unit) {
+fun PinSetupScreen(busy: Boolean, onPinSet: (String) -> Unit) {
     var pin by rememberSaveable { mutableStateOf("") }
     var confirm by rememberSaveable { mutableStateOf("") }
     var mismatch by rememberSaveable { mutableStateOf(false) }
-    val valid = pin.length in PIN_MIN_LENGTH..PIN_MAX_LENGTH && confirm.isNotEmpty()
+    val valid = !busy && pin.length in PIN_MIN_LENGTH..PIN_MAX_LENGTH && confirm.isNotEmpty()
 
     fun submit() {
         if (!valid) return
@@ -106,15 +108,15 @@ fun PinSetupScreen(onPinSet: (String) -> Unit) {
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = ::submit, enabled = valid, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.pin_setup_button))
+            ButtonContent(busy, stringResource(R.string.pin_setup_button))
         }
     }
 }
 
 @Composable
-fun PinEntryScreen(error: Boolean, onSubmit: (String) -> Unit, onInput: () -> Unit) {
+fun PinEntryScreen(busy: Boolean, error: Boolean, onSubmit: (String) -> Unit, onInput: () -> Unit) {
     var pin by rememberSaveable { mutableStateOf("") }
-    val valid = pin.length >= PIN_MIN_LENGTH
+    val valid = !busy && pin.length >= PIN_MIN_LENGTH
 
     fun submit() {
         if (!valid) return
@@ -133,8 +135,18 @@ fun PinEntryScreen(error: Boolean, onSubmit: (String) -> Unit, onInput: () -> Un
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = ::submit, enabled = valid, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.pin_entry_button))
+            ButtonContent(busy, stringResource(R.string.pin_entry_button))
         }
+    }
+}
+
+/** Текст кнопки или индикатор, пока считается PBKDF2. */
+@Composable
+private fun ButtonContent(busy: Boolean, text: String) {
+    if (busy) {
+        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+    } else {
+        Text(text)
     }
 }
 

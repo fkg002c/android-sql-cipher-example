@@ -25,7 +25,8 @@ data class AppUiState(stage: Stage, destination: Destination, pinError: Boolean)
 - **LOADING.** `PinManager.isPinSet()` читается на `Dispatchers.IO`, потому что первое обращение к EncryptedSharedPreferences инициализирует Keystore.
 - **PERMISSIONS.** Кнопка «Разрешить» вызывает `RequestMultiplePermissions`. Переход дальше происходит при любом результате, есть кнопка «Пропустить».
 - **SETUP_PIN.** Два поля: ПИН и подтверждение, 4–8 цифр. При несовпадении показывается ошибка.
-- **LOCKED.** Одно поле ПИНа. При неверном вводе поле очищается и показывается «Неверный ПИН-код».
+- **LOCKED.** Одно поле ПИНа. При неверном вводе поле очищается и показывается «Неверный ПИН-код». После верного ПИНа `unlock()` вызывает `DatabaseHolder.migrateKeyIfNeeded()`: если ПИН задан старой схемой SHA-256, БД перешифровывается ключом PBKDF2 (однократно).
+- **Индикатор `busy`.** PBKDF2 (600 000 итераций) и перешифрование занимают заметное время. Пока `AppUiState.busy == true`, кнопки «Сохранить» и «Войти» неактивны и показывают `CircularProgressIndicator`, а повторные нажатия игнорируются.
 - **UNLOCKED.** Главный экран с боковым меню.
 
 `AppRoot` в `MainActivity.kt` выбирает composable через `when (state.stage)`.

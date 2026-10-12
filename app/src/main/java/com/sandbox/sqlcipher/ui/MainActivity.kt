@@ -53,8 +53,9 @@ private fun AppRoot(viewModel: AppViewModel) {
             CircularProgressIndicator()
         }
         Stage.PERMISSIONS -> PermissionsScreen(onDone = viewModel::onPermissionsHandled)
-        Stage.SETUP_PIN -> PinSetupScreen(onPinSet = viewModel::setPin)
+        Stage.SETUP_PIN -> PinSetupScreen(busy = state.busy, onPinSet = viewModel::setPin)
         Stage.LOCKED -> PinEntryScreen(
+            busy = state.busy,
             error = state.pinError,
             onSubmit = viewModel::unlock,
             onInput = viewModel::clearPinError,

@@ -7,13 +7,15 @@
 ```
 SandboxApp.kt                     Application: @HiltAndroidApp, System.loadLibrary("sqlcipher")
 security/
-  PinManager.kt                   соль + SHA-256 ПИНа в EncryptedSharedPreferences; ключ БД
+  PinManager.kt                   соль + PBKDF2 ПИНа в EncryptedSharedPreferences; ключ БД; шаги миграции
+  Pbkdf2.kt                       PBKDF2-HMAC-SHA256: платформенный (API 26+) и fallback (API 24–25)
+  SecurityModule.kt               Hilt-модуль: @SecurePrefs EncryptedSharedPreferences
 data/
   db/
     Entities.kt                   UserEntity (users), EventEntity (events)
     Daos.kt                       UserDao, EventDao
     AppDatabase.kt                @Database, version = 1
-    DatabaseHolder.kt             ленивое открытие Room + SQLCipher
+    DatabaseHolder.kt             ленивое открытие Room + SQLCipher, миграция ключа; SqlCipherRekey
   repository/
     UserRepository.kt             CRUD пользователей, поиск имени по номеру, PhoneMatcher
     EventRepository.kt            запись и чтение событий
@@ -41,7 +43,7 @@ ui/
                                                          PinManager ──► ключ ──► SupportOpenHelperFactory (SQLCipher)
 ```
 
-- Все зависимости внедряет Hilt через `@Inject constructor`. Отдельные `@Module` не нужны: каждый класс можно создать напрямую.
+- Почти все зависимости внедряет Hilt через `@Inject constructor`. Единственный модуль, `SecurityModule`, предоставляет `@SecurePrefs SharedPreferences`. `PinManager` получает их через `dagger.Lazy`, поэтому в тестах можно подставить обычные SharedPreferences.
 - Репозитории и `DatabaseHolder` являются синглтонами, поэтому UI и ресивер работают с одним экземпляром БД внутри процесса.
 - Данные отдаются через `Flow`. ViewModel превращают их в `StateFlow` (`stateIn(WhileSubscribed(5_000))`), где значение `null` означает «ещё загружается».
 
@@ -73,7 +75,8 @@ ui/
 
 Ключ шифрования появляется только после установки ПИНа, поэтому БД нельзя создавать на старте процесса.
 
-- `DatabaseHolder.database` объявлена как `by lazy`: Room-инстанс собирается при первом обращении.
+- `DatabaseHolder.database` создаёт Room-инстанс при первом обращении (double-checked locking). Перед открытием `recoverInterruptedMigration()` разбирает незавершённую миграцию ключа.
+- `DatabaseHolder.migrateKeyIfNeeded(pin)` под той же блокировкой закрывает Room, перешифровывает файл (`SqlCipherRekey`) и сбрасывает инстанс. Следующее обращение откроет БД новым ключом. Подробности в [security.md](security.md#миграция-со-схемы-v1-sha-256).
 - UI обращается к БД только на этапе `UNLOCKED`, а к нему можно попасть лишь после установки ПИНа.
 - Ресивер сначала проверяет `DatabaseHolder.isReady()` (то есть `PinManager.isPinSet()`) и до установки ПИНа пропускает события.
 - `SandboxApp.onCreate()` загружает нативную библиотеку `sqlcipher` раньше любого открытия БД.
