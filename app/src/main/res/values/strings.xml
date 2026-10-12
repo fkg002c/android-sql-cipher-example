@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">SQL Cipher Sandbox</string>
+
+    <string name="permissions_title">Доступ к телефону</string>
+    <string name="permissions_text">Приложению нужен доступ к номеру вашей SIM-карты и к информации о номере текущего звонка, чтобы записывать события звонков.</string>
+    <string name="permissions_grant">Разрешить</string>
+    <string name="permissions_skip">Пропустить</string>
+
+    <string name="pin_setup_title">Установите ПИН-код</string>
+    <string name="pin_setup_text">ПИН-код из %1$d–%2$d цифр нужен для входа в приложение и шифрует базу данных. Восстановить его невозможно.</string>
+    <string name="pin_label">ПИН-код</string>
+    <string name="pin_confirm_label">Повторите ПИН-код</string>
+    <string name="pin_mismatch">ПИН-коды не совпадают</string>
+    <string name="pin_setup_button">Сохранить</string>
+    <string name="pin_entry_title">Введите ПИН-код</string>
+    <string name="pin_entry_button">Войти</string>
+    <string name="pin_wrong">Неверный ПИН-код</string>
+
+    <string name="menu">Меню</string>
+    <string name="own_number">Мой номер: %1$s</string>
+    <string name="own_number_unknown">Номер SIM недоступен</string>
+    <string name="screen_users">Пользователи</string>
+    <string name="screen_events">События</string>
+
+    <string name="users_empty">Пользователей пока нет</string>
+    <string name="user_add">Новый пользователь</string>
+    <string name="user_edit">Редактирование</string>
+    <string name="user_name">Имя</string>
+    <string name="user_phone">Телефон</string>
+    <string name="user_delete_title">Удалить пользователя?</string>
+    <string name="user_delete_text">%1$s (%2$s) будет удалён.</string>
+    <string name="save">Сохранить</string>
+    <string name="cancel">Отмена</string>
+    <string name="delete">Удалить</string>
+
+    <string name="events_empty">Событий пока нет</string>
+    <string name="events_no_number">номер скрыт</string>
+</resources>

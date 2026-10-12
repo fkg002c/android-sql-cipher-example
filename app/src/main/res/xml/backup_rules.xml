@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Зашифрованная БД и EncryptedSharedPreferences не переносимы между устройствами
+     (ключ живёт в Android Keystore), поэтому исключаем их из бэкапа. -->
+<full-backup-content>
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>
