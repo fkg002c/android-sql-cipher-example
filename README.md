@@ -22,6 +22,7 @@ Android-приложение-песочница: ведёт зашифрован
 
 ```bash
 ./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest   # юнит-тесты: PhoneMatcher, UserDao, EventDao (Robolectric)
 ```
 
 | Параметр | Значение |

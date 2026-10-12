@@ -39,4 +39,5 @@
 
 - `assembleDebug` проходит, приложение стартует на устройстве без падений, `libsqlcipher.so` загружается.
 - **Не проверено вручную:** онбординг с выдачей разрешений, установка и ввод ПИНа, CRUD пользователей, запись событий при реальном звонке, блокировка при уходе в фон.
-- Тесты существуют только шаблонные (`ExampleUnitTest`, `ExampleInstrumentedTest`). Кандидаты на юнит-тесты: `PhoneMatcher`, `PinManager` (через Robolectric), DAO (in-memory Room).
+- Юнит-тесты (`app/src/test`, запуск `./gradlew :app:testDebugUnitTest`): `PhoneMatcherTest` (чистый JVM), `UserDaoTest` и `EventDaoTest` (Robolectric + in-memory Room **без** SQLCipher, т.к. нативная библиотека под JVM недоступна). Robolectric не поддерживает API 37, поэтому `src/test/resources/robolectric.properties` фиксирует `sdk=35`.
+- Ещё не покрыты тестами: `PinManager` (EncryptedSharedPreferences/Keystore под Robolectric не работает — нужен инструментальный тест или абстракция над хранилищем), `UserRepository.findNameByPhone`, `EventRepository.record`, ресивер. Шифрование SQLCipher можно проверить только инструментальным тестом.
