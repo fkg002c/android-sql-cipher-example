@@ -96,6 +96,7 @@ fun PinSetupScreen(busy: Boolean, onPinSet: (String) -> Unit) {
             onValueChange = { pin = it; mismatch = false },
             label = stringResource(R.string.pin_label),
             imeAction = ImeAction.Next,
+            readOnly = busy,
         )
         Spacer(Modifier.height(8.dp))
         PinField(
@@ -105,6 +106,7 @@ fun PinSetupScreen(busy: Boolean, onPinSet: (String) -> Unit) {
             isError = mismatch,
             supportingText = if (mismatch) stringResource(R.string.pin_mismatch) else null,
             onDone = ::submit,
+            readOnly = busy,
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = ::submit, enabled = valid, modifier = Modifier.fillMaxWidth()) {
@@ -132,6 +134,8 @@ fun PinEntryScreen(busy: Boolean, error: Boolean, onSubmit: (String) -> Unit, on
             isError = error,
             supportingText = if (error) stringResource(R.string.pin_wrong) else null,
             onDone = ::submit,
+            // Пока идёт проверка ПИНа, ввод заблокирован
+            readOnly = busy,
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = ::submit, enabled = valid, modifier = Modifier.fillMaxWidth()) {
@@ -159,6 +163,7 @@ private fun PinField(
     supportingText: String? = null,
     imeAction: ImeAction = ImeAction.Done,
     onDone: () -> Unit = {},
+    readOnly: Boolean = false,
 ) {
     OutlinedTextField(
         value = value,
@@ -168,6 +173,8 @@ private fun PinField(
         },
         label = { Text(label) },
         singleLine = true,
+        // readOnly, а не enabled = false: фокус и клавиатура сохраняются, после неверного ПИНа можно сразу вводить снова
+        readOnly = readOnly,
         isError = isError,
         supportingText = supportingText?.let { { Text(it) } },
         visualTransformation = PasswordVisualTransformation(),

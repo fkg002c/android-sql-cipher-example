@@ -4,7 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sandbox.sqlcipher.data.db.DatabaseHolder
+import com.sandbox.sqlcipher.security.DataWiper
 import com.sandbox.sqlcipher.security.PinManager
+import com.sandbox.sqlcipher.security.PinManager.UnlockResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +47,7 @@ data class AppUiState(
 class AppViewModel @Inject constructor(
     private val pinManager: PinManager,
     private val databaseHolder: DatabaseHolder,
+    private val dataWiper: DataWiper,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AppUiState())
@@ -52,8 +55,15 @@ class AppViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val pinSet = withContext(Dispatchers.IO) { pinManager.isPinSet() }
-            _state.update { it.copy(stage = if (pinSet) Stage.LOCKED else Stage.PERMISSIONS) }
+            val stage = withContext(Dispatchers.IO) {
+                when {
+                    // Прошлая очистка не завершилась (процесс убит) — повторяем, остаёмся на LOADING
+                    pinManager.isLockedOut() -> Stage.LOADING.also { dataWiper.wipe() }
+                    pinManager.isPinSet() -> Stage.LOCKED
+                    else -> Stage.PERMISSIONS
+                }
+            }
+            _state.update { it.copy(stage = stage) }
         }
     }
 
@@ -74,15 +84,27 @@ class AppViewModel @Inject constructor(
         if (_state.value.busy) return
         _state.update { it.copy(busy = true) }
         viewModelScope.launch {
-            val ok = withContext(Dispatchers.IO) {
+            val result = withContext(Dispatchers.IO) {
                 val chars = pin.toCharArray()
                 try {
-                    pinManager.verifyPin(chars).also { ok -> if (ok) migrateKey(chars) }
+                    pinManager.attemptUnlock(chars).also { result ->
+                        when (result) {
+                            UnlockResult.OK -> migrateKey(chars)
+                            UnlockResult.LOCKED_OUT -> dataWiper.wipe()
+                            UnlockResult.WRONG -> Unit
+                        }
+                    }
                 } finally {
                     chars.fill('\u0000')
                 }
             }
-            if (ok) unlocked() else _state.update { it.copy(pinError = true, busy = false) }
+            when (result) {
+                UnlockResult.OK -> unlocked()
+                // Ни предупреждения, ни числа оставшихся попыток не показываем
+                UnlockResult.WRONG -> _state.update { it.copy(pinError = true, busy = false) }
+                // Процесс сейчас будет завершён; до этого UI ничего не принимает
+                UnlockResult.LOCKED_OUT -> _state.update { it.copy(stage = Stage.LOADING) }
+            }
         }
     }
 

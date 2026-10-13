@@ -7,7 +7,8 @@
 ```
 SandboxApp.kt                     Application: @HiltAndroidApp, System.loadLibrary("sqlcipher")
 security/
-  PinManager.kt                   соль + PBKDF2 ПИНа в EncryptedSharedPreferences; ключ БД; шаги миграции
+  PinManager.kt                   соль + PBKDF2 ПИНа в EncryptedSharedPreferences; ключ БД; шаги миграции; счётчик попыток
+  DataWiper.kt                    уничтожение данных и разрешений после 7 неверных ПИНов
   Pbkdf2.kt                       PBKDF2-HMAC-SHA256: платформенный (API 26+) и fallback (API 24–25)
   SecurityModule.kt               Hilt-модуль: @SecurePrefs EncryptedSharedPreferences
 data/

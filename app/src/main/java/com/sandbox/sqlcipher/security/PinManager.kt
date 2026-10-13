@@ -51,6 +51,36 @@ class PinManager @Inject constructor(
         return false
     }
 
+    // --- Ограничение попыток ----------------------------------------------------------------
+
+    enum class UnlockResult { OK, WRONG, LOCKED_OUT }
+
+    /** Число попыток входа подряд, не завершившихся успехом. Хранится на диске и переживает смерть процесса. */
+    fun failedAttempts(): Int = prefs.getInt(FAILED_ATTEMPTS, 0)
+
+    /** Лимит попыток исчерпан — данные должны быть уничтожены (см. [DataWiper]). */
+    fun isLockedOut(): Boolean = failedAttempts() >= MAX_ATTEMPTS
+
+    /**
+     * Проверка ПИНа при входе с учётом лимита попыток.
+     *
+     * Счётчик увеличивается и синхронно пишется на диск ДО вычисления PBKDF2: если процесс
+     * убьют или телефон перезагрузят во время проверки, попытка всё равно будет засчитана.
+     * Верный ПИН обнуляет счётчик.
+     */
+    fun attemptUnlock(pin: CharArray): UnlockResult {
+        val attempt = failedAttempts() + 1
+        if (attempt > MAX_ATTEMPTS) return UnlockResult.LOCKED_OUT
+        // Не удалось записать счётчик — ПИН не проверяем
+        check(prefs.edit().putInt(FAILED_ATTEMPTS, attempt).commit()) { "Failed to persist attempt counter" }
+
+        if (verifyPin(pin)) {
+            prefs.edit(commit = true) { remove(FAILED_ATTEMPTS) }
+            return UnlockResult.OK
+        }
+        return if (attempt >= MAX_ATTEMPTS) UnlockResult.LOCKED_OUT else UnlockResult.WRONG
+    }
+
     /** Пароль для SQLCipher. Пока миграция не завершена — старый SHA-256. */
     fun databaseKey(): ByteArray =
         checkNotNull(read(CURRENT) ?: readLegacy()) { "PIN is not set" }.hash
@@ -143,6 +173,10 @@ class PinManager @Inject constructor(
         const val ITERATIONS = 600_000
         const val SALT_SIZE = 16
         const val KEY_SIZE = 32
+
+        /** После стольких неверных ПИНов подряд все данные приложения уничтожаются. */
+        const val MAX_ATTEMPTS = 7
+        private const val FAILED_ATTEMPTS = "failed_attempts"
 
         private val CURRENT = Keys("pin_salt_v2", "pin_pbkdf2", "pin_iterations")
         private val PENDING = Keys("pending_salt", "pending_pbkdf2", "pending_iterations")

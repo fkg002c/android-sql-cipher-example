@@ -77,6 +77,57 @@ class PinManagerTest {
         manager.setPin("5678".toCharArray())
     }
 
+    // --- Ограничение попыток ----------------------------------------------------------------
+
+    @Test
+    fun `неверные ПИНы считаются, верный сбрасывает счётчик`() {
+        manager.setPin("1234".toCharArray())
+
+        repeat(3) { assertEquals(PinManager.UnlockResult.WRONG, manager.attemptUnlock("0000".toCharArray())) }
+        assertEquals(3, manager.failedAttempts())
+
+        assertEquals(PinManager.UnlockResult.OK, manager.attemptUnlock("1234".toCharArray()))
+        assertEquals(0, manager.failedAttempts())
+        assertFalse(manager.isLockedOut())
+    }
+
+    @Test
+    fun `седьмой неверный ПИН подряд исчерпывает лимит`() {
+        manager.setPin("1234".toCharArray())
+
+        repeat(PinManager.MAX_ATTEMPTS - 1) {
+            assertEquals(PinManager.UnlockResult.WRONG, manager.attemptUnlock("0000".toCharArray()))
+        }
+        assertFalse(manager.isLockedOut())
+
+        assertEquals(PinManager.UnlockResult.LOCKED_OUT, manager.attemptUnlock("0000".toCharArray()))
+        assertTrue(manager.isLockedOut())
+        // После исчерпания лимита даже верный ПИН не принимается
+        assertEquals(PinManager.UnlockResult.LOCKED_OUT, manager.attemptUnlock("1234".toCharArray()))
+    }
+
+    @Test
+    fun `счётчик хранится на диске и переживает перезапуск процесса`() {
+        manager.setPin("1234".toCharArray())
+        repeat(PinManager.MAX_ATTEMPTS - 1) { manager.attemptUnlock("0000".toCharArray()) }
+
+        // Новый экземпляр — как после смерти процесса
+        val restarted = PinManager { prefs }
+        assertEquals(PinManager.MAX_ATTEMPTS - 1, restarted.failedAttempts())
+        assertEquals(PinManager.UnlockResult.LOCKED_OUT, restarted.attemptUnlock("0000".toCharArray()))
+    }
+
+    @Test
+    fun `попытка засчитывается до проверки ПИНа`() {
+        // Ключ повреждён: проверка падает посередине, как при смерти процесса во время PBKDF2
+        manager.setPin("1234".toCharArray())
+        prefs.edit(commit = true) { putString("pin_salt_v2", "не base64!") }
+
+        runCatching { manager.attemptUnlock("1234".toCharArray()) }
+
+        assertEquals(1, manager.failedAttempts())
+    }
+
     // --- Миграция со схемы SHA-256 ----------------------------------------------------------
 
     @Test

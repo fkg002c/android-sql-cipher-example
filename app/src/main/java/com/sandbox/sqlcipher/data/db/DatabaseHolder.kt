@@ -68,6 +68,12 @@ class DatabaseHolder @Inject constructor(
         Log.i(TAG, "Database key migrated to PBKDF2")
     }
 
+    /** Закрывает открытый экземпляр Room (перед удалением файла БД). */
+    fun close(): Unit = synchronized(lock) {
+        instance?.close()
+        instance = null
+    }
+
     private fun open(): AppDatabase {
         recoverInterruptedMigration()
         return Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)

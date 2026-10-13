@@ -21,7 +21,7 @@ annotation class SecurePrefs
 @InstallIn(SingletonComponent::class)
 object SecurityModule {
 
-    private const val PREFS_NAME = "secure_prefs"
+    const val PREFS_NAME = "secure_prefs"
 
     // Создание обращается к Keystore — внедрять через dagger.Lazy и вызывать не на main-потоке
     @Suppress("DEPRECATION") // security-crypto 1.1.0 помечен deprecated, но остаётся рабочим
